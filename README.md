@@ -1,20 +1,20 @@
 # children_pipeline
 
-Автоматический пайплайн для выявления случаев отсутствия прогресса у детей
+Тестовое задание в сбер с реализацией автоматического пайплайна для выявления случаев отсутствия прогресса у детей
 с РАС/ОВЗ по данным сессионных оценок навыков.
 
 ---
 
-## Быстрый старт
+## Способы запуска
 
-### Вариант 1 — venv (рекомендуется)
+### Вариант 1 — venv
 
 ```bash
 git clone <repo-url>
 cd children_pipeline
 
 python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 
 python pipeline.py run
@@ -36,11 +36,11 @@ docker run --rm \
 
 ```
 outputs/
-├── stagnation_report.csv      # Сводный отчёт по застою
-├── stagnation_report.xlsx     # То же, с условным форматированием
-├── summary.md                 # Читаемый отчёт для супервизора
+├── stagnation_report.csv # Сводный отчёт по застою
+├── stagnation_report.xlsx # Сводный отчёт по застою в формате excel
+├── summary.md # Отчет для супервизора
 └── plots/
-    ├── СП02.png               # График динамики оценок
+    ├── СП02.png # График динамики оценок
     ├── СП10.png
     └── ...
 ```
@@ -51,17 +51,13 @@ outputs/
 
 | Технология | Версия | Зачем |
 |---|---|---|
-| **pandas** | ≥ 2.0 | Главная структура данных — typed DataFrame с явной схемой |
-| **numpy** | ≥ 1.24 | Векторные операции при вычислении дельт |
+| **pandas** | ≥ 2.0 | Для работ с DataFrame |
+| **numpy** | ≥ 1.24 | Вычислени дельт |
 | **openpyxl** | ≥ 3.1 | Чтение/запись `.xlsx` с условным форматированием |
-| **matplotlib** | ≥ 3.7 | Графики динамики оценок — низкоуровневый контроль рендеринга |
+| **matplotlib** | ≥ 3.7 | Графики |
 | **click** | ≥ 8.1 | CLI с `--help`, валидацией путей и компонуемыми командами |
-| **pytest** | ≥ 7.4 | Юнит-тесты с фикстурами, параметризацией |
+| **pytest** | ≥ 7.4 | Юнит-тесты |
 | **pytest-cov** | ≥ 4.1 | Покрытие кода для CI |
-
-Python выбран согласно требованиям задания.
-`polars` не использован, чтобы сохранить минимальный стек и избежать overhead при
-объёме ~100–10 000 строк, при котором `pandas` полностью достаточен.
 
 ---
 
@@ -69,26 +65,26 @@ Python выбран согласно требованиям задания.
 
 ```
 children_pipeline/
-├── pipeline.py          # CLI (Click): run / validate / plot
-├── requirements.txt
+├── pipeline.py # Главная генерация пайплайна
+├── requirements.txt # Верссии библиотек
 ├── Dockerfile
 │
 ├── data/
 │   └── children_sessions.xlsx
 │
 ├── src/
-│   ├── constants.py     # ВСЕ магические числа и строки — только здесь
-│   ├── schema.py        # Канонические dtype; функция enforce_schema()
-│   ├── validator.py     # Валидация + авторемонт; возвращает (cleaned_df, issues_df)
-│   ├── analysis.py      # detect_stagnation(df, min_days) — ключевая логика
-│   └── reporting.py     # export_report / plot_dynamics / generate_summary
+│   ├── constants.py # Числа и строки
+│   ├── schema.py # функция enforce_schema()
+│   ├── validator.py # Валидация + авторемонт; возвращает (cleaned_df, issues_df)
+│   ├── analysis.py # detect_stagnation(df, min_days)
+│   └── reporting.py # export_report / plot_dynamics / generate_summary
 │
 ├── tests/
-│   ├── conftest.py      # Shared pytest fixtures
+│   ├── conftest.py # Общие тестовые приложения pytest
 │   ├── test_analysis.py # ~13 тестов: дельты, уровни риска, граничные случаи
-│   └── test_validator.py# ~14 тестов: column-shift, диапазон score, child_id
+│   └── test_validator.py # ~14 тестов: column-shift, диапазон score, child_id
 │
-└── outputs/             # Генерируется при запуске
+└── outputs/ # Создается при запуске
     ├── stagnation_report.csv
     ├── stagnation_report.xlsx
     ├── summary.md
@@ -96,12 +92,6 @@ children_pipeline/
 ```
 
 ### Пайплайн обработки данных
-
-```
-Excel → validate() → detect_stagnation() → export_report()
-                                         → plot_dynamics()
-                                         → generate_summary()
-```
 
 1. **validate()** — читает сырые данные, восстанавливает структуру:
    - Ремонтирует «сдвиг колонок» (`specialist_type` попал в `progress_flag`) — 85 % строк
@@ -143,9 +133,6 @@ python -m pytest tests/ -v
 # С покрытием
 python -m pytest tests/ --cov=src --cov-report=term-missing
 ```
-
-Ожидаемый результат: **31 passed, 1 skipped** (skip — намеренный, когда в
-фикстуре недостаточно строк разного риска для проверки сортировки).
 
 ### Валидация отчёта
 
@@ -199,13 +186,13 @@ from src.validator import load_and_validate
 from src.analysis import detect_stagnation
 from src.reporting import export_report, plot_dynamics, generate_summary
 
-# 1. Загрузить и провалидировать
+# 1 Загрузить и провалидировать
 result = load_and_validate("data/children_sessions.xlsx")
 
-# 2. Найти застой (4 недели = умолчание)
+# 2 Найти застой
 report = detect_stagnation(result.cleaned, min_days=28)
 
-# 3. Экспортировать
+# 3 Экспортировать
 export_report(report, output_dir="outputs")
 plot_dynamics(result.cleaned, output_dir="outputs")
 generate_summary(report, output_dir="outputs", min_days=28)
@@ -222,8 +209,6 @@ outputs/plots/СП10.png
 ```
 
 Оценка не менялась с 2 на протяжении всего периода наблюдения.
-Рекомендация (из `summary.md`): «Без изменений за 3+ месяца, нужен пересмотр подхода».
-
 ---
 
 ## Структура выходных данных
