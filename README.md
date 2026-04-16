@@ -205,7 +205,7 @@ generate_summary(report, output_dir="outputs", min_days=28)
 Пример графика для **СП10** (HIGH risk, Listening — 105 дней без прогресса):
 
 ```
-children_pipline/outputs/plots/СП10.png
+СП10.png
 ```
 
 Оценка не менялась с 2 на протяжении всего периода наблюдения.
